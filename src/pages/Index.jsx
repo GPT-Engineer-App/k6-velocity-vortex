@@ -1,20 +1,40 @@
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Cat, Info, Paw, Heart, Share2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Cat, Info, Paw, Heart, Share2, ChevronLeft, ChevronRight, Instagram, Twitter, Facebook } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
 const Index = () => {
   const [likedFacts, setLikedFacts] = useState(new Set());
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
   const [progress, setProgress] = useState(0);
   const { toast } = useToast();
+  const [catCount, setCatCount] = useState(0);
+  const targetCatCount = 600000000; // Estimated number of domestic cats worldwide
+  const headerRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: headerRef,
+    offset: ["start start", "end start"]
+  });
+  const headerY = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
+  const headerOpacity = useTransform(scrollYProgress, [0, 1], [1, 0]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCatCount(prevCount => {
+        const increment = Math.floor(Math.random() * 1000000) + 500000;
+        return Math.min(prevCount + increment, targetCatCount);
+      });
+    }, 100);
+
+    return () => clearInterval(timer);
+  }, []);
 
   const toggleLike = (fact) => {
     setLikedFacts((prev) => {
@@ -108,48 +128,49 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen p-8 bg-gradient-to-b from-purple-100 to-pink-100">
-      <motion.h1 
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="text-5xl font-bold mb-8 text-center text-purple-800"
+    <div className="min-h-screen bg-gradient-to-b from-purple-100 to-pink-100">
+      <motion.div 
+        ref={headerRef}
+        className="relative h-screen flex items-center justify-center overflow-hidden"
+        style={{ y: headerY, opacity: headerOpacity }}
       >
-        Fascinating Felines
-      </motion.h1>
+        <motion.h1 
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-7xl font-bold text-center text-purple-800 z-10"
+        >
+          Fascinating Felines
+        </motion.h1>
+        <motion.img 
+          src={catImages[0]} 
+          alt="Background cat"
+          className="absolute inset-0 w-full h-full object-cover opacity-30"
+          style={{ scale: useTransform(scrollYProgress, [0, 1], [1.1, 1]) }}
+        />
+      </motion.div>
       
-      <div className="max-w-4xl mx-auto">
-        <div className="relative mb-8">
-          <AnimatePresence mode="wait">
-            <motion.img 
-              key={currentImageIndex}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
-              src={catImages[currentImageIndex]}
-              alt="Cute cat" 
-              className="mx-auto object-cover w-full h-[400px] rounded-lg shadow-lg"
-            />
-          </AnimatePresence>
-          <div className="absolute inset-0 flex items-center justify-between px-4">
-            <Button variant="outline" size="icon" onClick={prevImage} className="rounded-full bg-white bg-opacity-50 hover:bg-opacity-75">
-              <ChevronLeft className="h-6 w-6" />
-            </Button>
-            <Button variant="outline" size="icon" onClick={nextImage} className="rounded-full bg-white bg-opacity-50 hover:bg-opacity-75">
-              <ChevronRight className="h-6 w-6" />
-            </Button>
-          </div>
-          <div className="absolute bottom-4 left-4 right-4 flex items-center space-x-2">
-            <Progress value={progress} className="flex-grow" />
-            <Button variant="outline" size="sm" onClick={() => setAutoPlay(!autoPlay)} className="bg-white bg-opacity-70">
-              {autoPlay ? "Pause" : "Play"}
-            </Button>
-            <Button variant="ghost" size="icon" onClick={shareContent} className="bg-white bg-opacity-70">
-              <Share2 className="h-6 w-6" />
-            </Button>
-          </div>
-        </div>
+      <div className="max-w-4xl mx-auto p-8">
+        <motion.div 
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="text-3xl font-bold mb-8 text-center text-purple-800"
+        >
+          Estimated Cats Worldwide: {catCount.toLocaleString()}
+        </motion.div>
+
+        <Carousel className="mb-8">
+          <CarouselContent>
+            {catImages.map((image, index) => (
+              <CarouselItem key={index}>
+                <img src={image} alt={`Cat ${index + 1}`} className="mx-auto object-cover w-full h-[400px] rounded-lg shadow-lg" />
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious />
+          <CarouselNext />
+        </Carousel>
 
         <Alert className="mb-8">
           <Heart className="h-4 w-4" />
@@ -178,7 +199,8 @@ const Index = () => {
                       initial={{ opacity: 0, x: -50 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.5, delay: index * 0.1 }}
-                      className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                      className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all"
+                      whileHover={{ scale: 1.02, backgroundColor: "#f0f0f0" }}
                     >
                       <span className="flex-grow mr-4">{fact}</span>
                       <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
@@ -211,7 +233,8 @@ const Index = () => {
                       initial={{ opacity: 0, x: 50 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.5, delay: index * 0.1 }}
-                      className="p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                      className="p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all"
+                      whileHover={{ scale: 1.02, backgroundColor: "#f0f0f0" }}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <strong className="text-lg">{breed.name}</strong>
@@ -226,6 +249,24 @@ const Index = () => {
           </TabsContent>
         </Tabs>
       </div>
+      
+      <footer className="bg-purple-800 text-white py-8">
+        <div className="max-w-4xl mx-auto px-8 flex flex-col items-center">
+          <h2 className="text-2xl font-bold mb-4">Connect with Fascinating Felines</h2>
+          <div className="flex space-x-4">
+            <Button variant="ghost" size="icon">
+              <Instagram className="h-6 w-6" />
+            </Button>
+            <Button variant="ghost" size="icon">
+              <Twitter className="h-6 w-6" />
+            </Button>
+            <Button variant="ghost" size="icon">
+              <Facebook className="h-6 w-6" />
+            </Button>
+          </div>
+          <p className="mt-4 text-center">© 2024 Fascinating Felines. All rights reserved.</p>
+        </div>
+      </footer>
     </div>
   );
 };
