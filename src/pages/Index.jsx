@@ -3,13 +3,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Cat, Info, Paw, Heart, Share2 } from "lucide-react";
+import { Cat, Info, Paw, Heart, Share2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 
 const Index = () => {
   const [likedFacts, setLikedFacts] = useState(new Set());
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(true);
+  const [progress, setProgress] = useState(0);
   const { toast } = useToast();
 
   const toggleLike = (fact) => {
@@ -30,6 +34,16 @@ const Index = () => {
       }
       return newSet;
     });
+  };
+
+  const nextImage = () => {
+    setCurrentImageIndex((prevIndex) => (prevIndex + 1) % catImages.length);
+    setProgress(0);
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prevIndex) => (prevIndex - 1 + catImages.length) % catImages.length);
+    setProgress(0);
   };
 
   const shareContent = () => {
@@ -54,11 +68,20 @@ const Index = () => {
   };
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % catImages.length);
-    }, 5000);
+    let interval;
+    if (autoPlay) {
+      interval = setInterval(() => {
+        setProgress((prevProgress) => {
+          if (prevProgress >= 100) {
+            nextImage();
+            return 0;
+          }
+          return prevProgress + 1;
+        });
+      }, 50);
+    }
     return () => clearInterval(interval);
-  }, []);
+  }, [autoPlay]);
 
   const catFacts = [
     "Cats have excellent night vision and can see at one-sixth the light level required for human vision.",
@@ -70,12 +93,12 @@ const Index = () => {
   ];
 
   const catBreeds = [
-    { name: "Siamese", description: "Known for their distinctive coloring and vocal nature." },
-    { name: "Maine Coon", description: "One of the largest domesticated cat breeds with a distinctive physical appearance." },
-    { name: "Persian", description: "Recognized for their long fur and flat faces." },
-    { name: "Bengal", description: "Noted for their wild appearance resembling leopards." },
-    { name: "Sphynx", description: "Famous for their lack of fur and wrinkled skin." },
-    { name: "Scottish Fold", description: "Characterized by their folded ears and round faces." },
+    { name: "Siamese", description: "Known for their distinctive coloring and vocal nature.", origin: "Thailand" },
+    { name: "Maine Coon", description: "One of the largest domesticated cat breeds with a distinctive physical appearance.", origin: "United States" },
+    { name: "Persian", description: "Recognized for their long fur and flat faces.", origin: "Iran" },
+    { name: "Bengal", description: "Noted for their wild appearance resembling leopards.", origin: "United States" },
+    { name: "Sphynx", description: "Famous for their lack of fur and wrinkled skin.", origin: "Canada" },
+    { name: "Scottish Fold", description: "Characterized by their folded ears and round faces.", origin: "Scotland" },
   ];
 
   const catImages = [
@@ -109,16 +132,23 @@ const Index = () => {
               className="mx-auto object-cover w-full h-[400px] rounded-lg shadow-lg"
             />
           </AnimatePresence>
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="absolute bottom-4 right-4 bg-white bg-opacity-70 p-2 rounded-full"
-          >
-            <Button variant="ghost" size="icon" onClick={shareContent}>
+          <div className="absolute inset-0 flex items-center justify-between px-4">
+            <Button variant="outline" size="icon" onClick={prevImage} className="rounded-full bg-white bg-opacity-50 hover:bg-opacity-75">
+              <ChevronLeft className="h-6 w-6" />
+            </Button>
+            <Button variant="outline" size="icon" onClick={nextImage} className="rounded-full bg-white bg-opacity-50 hover:bg-opacity-75">
+              <ChevronRight className="h-6 w-6" />
+            </Button>
+          </div>
+          <div className="absolute bottom-4 left-4 right-4 flex items-center space-x-2">
+            <Progress value={progress} className="flex-grow" />
+            <Button variant="outline" size="sm" onClick={() => setAutoPlay(!autoPlay)} className="bg-white bg-opacity-70">
+              {autoPlay ? "Pause" : "Play"}
+            </Button>
+            <Button variant="ghost" size="icon" onClick={shareContent} className="bg-white bg-opacity-70">
               <Share2 className="h-6 w-6" />
             </Button>
-          </motion.div>
+          </div>
         </div>
 
         <Alert className="mb-8">
@@ -148,9 +178,9 @@ const Index = () => {
                       initial={{ opacity: 0, x: -50 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.5, delay: index * 0.1 }}
-                      className="flex items-center justify-between"
+                      className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
                     >
-                      <span>{fact}</span>
+                      <span className="flex-grow mr-4">{fact}</span>
                       <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                         <Button
                           variant="outline"
@@ -181,8 +211,13 @@ const Index = () => {
                       initial={{ opacity: 0, x: 50 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.5, delay: index * 0.1 }}
+                      className="p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
                     >
-                      <strong>{breed.name}:</strong> {breed.description}
+                      <div className="flex items-center justify-between mb-2">
+                        <strong className="text-lg">{breed.name}</strong>
+                        <Badge variant="secondary">{breed.origin}</Badge>
+                      </div>
+                      <p>{breed.description}</p>
                     </motion.li>
                   ))}
                 </ul>
